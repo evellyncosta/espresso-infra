@@ -71,10 +71,10 @@ log_retention_in_days = config.get_int("logRetentionInDays") or 30
 kms_key_arn = config.get("kmsKeyArn")
 deletion_protection = config.get_bool("deletionProtection")
 if deletion_protection is None:
-    deletion_protection = True
+    deletion_protection = False
 skip_final_snapshot = config.get_bool("skipFinalSnapshot")
 if skip_final_snapshot is None:
-    skip_final_snapshot = False
+    skip_final_snapshot = True
 
 tags = {
     "Project": project_name,
