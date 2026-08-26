@@ -49,6 +49,9 @@ application_cpu = config.get("applicationCpu") or "1024"
 application_memory = config.get("applicationMemory") or "2048"
 application_container_port = config.get_int("applicationContainerPort") or 8080
 application_health_check_path = config.get("applicationHealthCheckPath") or "/"
+cache_node_type = config.get("cacheNodeType") or "cache.t4g.micro"
+cache_engine_version = config.get("cacheEngineVersion") or "7.2"
+cache_port = config.get_int("cachePort") or 6379
 application_min_tasks = config.get_int("applicationMinTasks")
 if application_min_tasks is None:
     application_min_tasks = 1
@@ -144,6 +147,14 @@ db_subnet_group = aws.rds.SubnetGroup(
     tags={**tags, "Name": f"{name}-db-subnet-group"},
 )
 
+cache_subnet_group = aws.elasticache.SubnetGroup(
+    "cache-subnet-group",
+    name=f"{name}-cache-subnet-group",
+    description=f"Private subnets for the {name} Valkey cache",
+    subnet_ids=[subnet.id for subnet in private_subnets],
+    tags={**tags, "Name": f"{name}-cache-subnet-group"},
+)
+
 database_security_group = aws.ec2.SecurityGroup(
     "database-security-group",
     name=f"{name}-database",
@@ -228,6 +239,45 @@ application_security_group = aws.ec2.SecurityGroup(
         )
     ],
     tags={**tags, "Name": f"{name}-application"},
+)
+
+cache_security_group = aws.ec2.SecurityGroup(
+    "cache-security-group",
+    name=f"{name}-cache",
+    description=f"Ingress control for the {name} Valkey cache",
+    vpc_id=vpc.id,
+    egress=[
+        aws.ec2.SecurityGroupEgressArgs(
+            protocol="-1",
+            from_port=0,
+            to_port=0,
+            cidr_blocks=["0.0.0.0/0"],
+            description="Allow Valkey managed service egress",
+        )
+    ],
+    tags={**tags, "Name": f"{name}-cache"},
+)
+
+aws.ec2.SecurityGroupRule(
+    "cache-ingress-application",
+    type="ingress",
+    security_group_id=cache_security_group.id,
+    source_security_group_id=application_security_group.id,
+    protocol="tcp",
+    from_port=cache_port,
+    to_port=cache_port,
+    description="Valkey access from the ECS application",
+)
+
+aws.ec2.SecurityGroupRule(
+    "cache-ingress-client-vpn",
+    type="ingress",
+    security_group_id=cache_security_group.id,
+    source_security_group_id=client_vpn_security_group.id,
+    protocol="tcp",
+    from_port=cache_port,
+    to_port=cache_port,
+    description="Valkey access from the Client VPN",
 )
 
 aws.ec2.SecurityGroupRule(
@@ -469,6 +519,26 @@ database = aws.rds.Instance(
     ),
 )
 
+cache = aws.elasticache.ReplicationGroup(
+    "valkey",
+    description=f"Single-node Valkey cache for {name}",
+    replication_group_id=f"{name}-cache",
+    engine="valkey",
+    engine_version=cache_engine_version,
+    node_type=cache_node_type,
+    num_cache_clusters=1,
+    cluster_mode="disabled",
+    automatic_failover_enabled=False,
+    multi_az_enabled=False,
+    parameter_group_name="default.valkey7",
+    port=cache_port,
+    subnet_group_name=cache_subnet_group.name,
+    security_group_ids=[cache_security_group.id],
+    snapshot_retention_limit=0,
+    apply_immediately=False,
+    tags={**tags, "Name": f"{name}-cache"},
+)
+
 ecr_repository = aws.ecr.Repository(
     "application-repository",
     name=ecr_repository_name,
@@ -648,6 +718,9 @@ pulumi.export("database_identifier", database.identifier)
 pulumi.export("database_endpoint", database.address)
 pulumi.export("database_port", database.port)
 pulumi.export("database_security_group_id", database_security_group.id)
+pulumi.export("cache_endpoint", cache.primary_endpoint_address)
+pulumi.export("cache_port", cache.port)
+pulumi.export("cache_security_group_id", cache_security_group.id)
 pulumi.export("client_vpn_endpoint_id", client_vpn_endpoint.id)
 pulumi.export(
     "master_user_secret_arn",
