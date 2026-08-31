@@ -1,6 +1,0 @@
-name: espresso-infra
-runtime:
-  name: python
-  options:
-    toolchain: poetry
-description: Infraestrutura AWS do banco PostgreSQL do Espresso

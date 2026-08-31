@@ -1,0 +1,12 @@
+version: '3'
+
+tasks:
+  install:
+    desc: Instala Docker de forma idempotente e verifica o serviço.
+    cmds:
+      - ./scripts/remote.sh docker
+
+  status:
+    desc: Verifica versões do Docker e estado do serviço remoto.
+    cmds:
+      - ./scripts/remote.sh docker-status

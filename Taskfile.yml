@@ -1,0 +1,64 @@
+version: '3'
+
+dotenv:
+  - .env
+
+includes:
+  system:
+    taskfile: ./tasks/system.yml
+  security:
+    taskfile: ./tasks/security.yml
+  docker:
+    taskfile: ./tasks/docker.yml
+  coolify:
+    taskfile: ./tasks/coolify.yml
+
+tasks:
+  setup:
+    desc: Executa o bootstrap completo da VPS Contabo na ordem segura.
+    cmds:
+      - task: preflight
+      - task: system:prepare
+      - task: docker:install
+      - task: security:configure
+      - task: coolify:install
+
+  bootstrap:
+    desc: Alias para setup.
+    cmds:
+      - task: setup
+
+  preflight:
+    desc: Valida variáveis locais e conectividade SSH básica com a VPS.
+    cmds:
+      - ./scripts/remote.sh preflight
+
+  ssh:test:
+    desc: Executa um comando inofensivo na VPS para validar o acesso SSH.
+    cmds:
+      - ./scripts/remote.sh command whoami
+
+  system:
+    desc: Prepara sistema operacional, dependências básicas e timezone.
+    cmds:
+      - task: system:prepare
+
+  security:
+    desc: Configura firewall básico preservando o acesso SSH.
+    cmds:
+      - task: security:configure
+
+  install:docker:
+    desc: Instala e habilita Docker Engine e Docker Compose plugin.
+    cmds:
+      - task: docker:install
+
+  install:coolify:
+    desc: Instala ou verifica Coolify na VPS preparada.
+    cmds:
+      - task: coolify:install
+
+  status:
+    desc: Exibe status remoto resumido de Docker, firewall e Coolify.
+    cmds:
+      - ./scripts/remote.sh status

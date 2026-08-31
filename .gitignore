@@ -1,18 +1,26 @@
 .docs/
 
-# Pulumi
+# Arquivos de ambiente e sistema
+.env
+.env.*
+!.env.example
+.DS_Store
+*.ovpn
+*.pem
+*.key
+/contabo
+/contabo.pub
+
+# Configuração local legada do Pulumi
 .pulumi/
 Pulumi.*.yaml
 !Pulumi.example.yaml
 
-# Python
+# Cache local de ferramentas
+.task/
+
+# Python legado/local
 .venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
-
-# Arquivos de ambiente e sistema
-.env
-.env.*
-.DS_Store
-*.ovpn

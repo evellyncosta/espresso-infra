@@ -1,0 +1,12 @@
+version: '3'
+
+tasks:
+  install:
+    desc: Instala Coolify ou preserva uma instalação existente.
+    cmds:
+      - ./scripts/remote.sh coolify
+
+  status:
+    desc: Verifica containers e diretórios esperados do Coolify.
+    cmds:
+      - ./scripts/remote.sh coolify-status

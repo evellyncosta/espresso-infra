@@ -1,0 +1,7 @@
+version: '3'
+
+tasks:
+  configure:
+    desc: Configura UFW com SSH, HTTP, HTTPS e portas diretas do Coolify.
+    cmds:
+      - ./scripts/remote.sh security

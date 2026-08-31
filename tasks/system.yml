@@ -1,0 +1,12 @@
+version: '3'
+
+tasks:
+  prepare:
+    desc: Atualiza pacotes, instala dependências básicas e aplica timezone opcional.
+    cmds:
+      - ./scripts/remote.sh system
+
+  check-os:
+    desc: Valida se a VPS usa um sistema operacional suportado.
+    cmds:
+      - ./scripts/remote.sh check-os
