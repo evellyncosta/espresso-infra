@@ -1,32 +1,39 @@
 # Espresso Infra
 
-Bootstrap operacional da VPS Contabo usada para executar a aplicação Espresso com Docker e Coolify.
+Provisionamento da infraestrutura do projeto Espresso usando Taskfile, Docker e Coolify.
 
-Este repositório não cria, destrói, redimensiona nem gerencia o ciclo de vida da VPS. A máquina deve existir antes da execução das tasks. A Contabo é responsável pelo lifecycle da VPS; o Taskfile prepara o servidor; o Coolify gerencia deploy, containers, variáveis, domínios e serviços da aplicação após o bootstrap.
+Atualmente a infraestrutura roda em uma VPS Contabo. Este repositório prepara essa VPS para executar a aplicação Espresso e seus serviços de apoio, mas não cria, destrói, redimensiona nem gerencia o ciclo de vida da máquina no provedor. A VPS deve existir antes da execução das tasks, com acesso SSH funcional a partir da máquina do operador.
 
-## Arquitetura
+## Proposta do projeto
 
-```text
-Git repository
-      |
-      v
-   Coolify
-      |
-      v
-Contabo VPS
-  - Docker
-  - App
-  - PostgreSQL/Redis quando gerenciados pelo Coolify
-  - dados persistentes em Docker volumes ou bind mounts locais
-```
+A proposta do Espresso Infra é provisionar a infraestrutura necessária para rodar o projeto Espresso em uma VPS já configurada, usando Taskfile como interface operacional e Coolify como plataforma de deploy e runtime de containers.
+
+O projeto entrega uma interface única via Taskfile para preparar o servidor remoto por SSH, validar o sistema operacional, configurar dependências básicas, proteger o acesso inicial com UFW, instalar Docker e instalar ou preservar o Coolify. A partir do Coolify, a infraestrutura de runtime passa a incluir a aplicação Spring do Espresso, PostgreSQL e Redis/Valkey em containers gerenciados.
+
+O foco é reduzir a complexidade operacional da hospedagem sem introduzir outro sistema de provisionamento. Por isso, este repositório não chama APIs da Contabo, não usa Pulumi, Terraform, OpenTofu, Ansible, Chef ou Puppet, e não tenta gerenciar recursos externos à VPS.
+
+## Infraestrutura provisionada
+
+O fluxo `task setup` provisiona ou verifica:
+
+- sistema operacional suportado para o runtime;
+- pacotes básicos necessários para operação;
+- firewall UFW com as portas necessárias para SSH, HTTP, HTTPS e Coolify;
+- Docker Engine e Docker Compose plugin;
+- Coolify self-hosted;
+- base para containers da aplicação Spring, PostgreSQL e Redis/Valkey gerenciados pelo Coolify.
+
+## Documentação de arquitetura
+
+A arquitetura do projeto está documentada separadamente em [architecture.md](architecture.md).
 
 ## Pré-requisitos
 
-- VPS Contabo já criada manualmente.
+- VPS já criada e configurada no provedor. Atualmente, o provedor usado é a Contabo.
 - Debian 12, Ubuntu 22.04 LTS ou Ubuntu 24.04 LTS.
 - Acesso SSH funcionando para a VPS.
 - Usuário `root` ou usuário com `sudo` sem senha para comandos administrativos.
-- Chave SSH privada válida na máquina do desenvolvedor.
+- Chave SSH privada válida e já configurada na máquina do desenvolvedor ou operador.
 - Task instalado localmente: https://taskfile.dev/installation/
 - Domínio apontado para a VPS quando o acesso HTTPS final for configurado no Coolify.
 
@@ -63,7 +70,7 @@ Variáveis disponíveis:
 
 O arquivo `.env` é ignorado pelo Git. Não adicione chaves, senhas, tokens ou credenciais reais ao repositório.
 
-## Bootstrap
+## Provisionamento
 
 Execute o fluxo completo:
 
@@ -134,7 +141,7 @@ A task de segurança usa UFW e libera explicitamente:
 
 | Porta | Uso |
 | --- | --- |
-| `22/tcp` ou `SSH_PORT` | SSH usado no bootstrap. |
+| `22/tcp` ou `SSH_PORT` | SSH usado no provisionamento. |
 | `80/tcp` | HTTP, proxy e emissão/renovação de certificados. |
 | `443/tcp` | HTTPS. |
 | `8000/tcp` | Acesso direto inicial ao dashboard do Coolify. |
@@ -154,13 +161,14 @@ PostgreSQL, Redis/Valkey e dados da aplicação não devem depender apenas da ca
 
 ## Responsabilidades do Coolify
 
-Após o bootstrap, o Coolify é responsável por:
+Após o provisionamento, o Coolify é responsável por:
 
 - integração com o repositório da aplicação;
 - build e deploy;
 - restart e lifecycle dos containers;
 - variáveis de ambiente da aplicação;
 - domínio, HTTP/HTTPS e certificados;
+- container da aplicação Spring Espresso;
 - PostgreSQL e Redis/Valkey quando esses serviços forem executados pelo Coolify;
 - volumes persistentes dos serviços gerenciados.
 
