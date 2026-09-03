@@ -12,16 +12,27 @@ includes:
     taskfile: ./tasks/docker.yml
   coolify:
     taskfile: ./tasks/coolify.yml
+  observability:
+    taskfile: ./tasks/observability.yml
 
 tasks:
   setup:
-    desc: Executa o bootstrap completo da VPS Contabo na ordem segura.
+    desc: Executa o provisionamento base da VPS Contabo na ordem segura.
     cmds:
       - task: preflight
       - task: system:prepare
       - task: docker:install
       - task: security:configure
       - task: coolify:install
+
+  setup:observability:
+    desc: Executa o provisionamento opt-in de observabilidade com Foundry/foundryctl e SigNoz.
+    cmds:
+      - task: preflight
+      - task: system:prepare
+      - task: docker:install
+      - task: observability:firewall
+      - task: observability:install-signoz
 
   bootstrap:
     desc: Alias para setup.
@@ -57,6 +68,21 @@ tasks:
     desc: Instala ou verifica Coolify na VPS preparada.
     cmds:
       - task: coolify:install
+
+  install:foundryctl:
+    desc: Instala ou verifica Foundry/foundryctl na VPS preparada.
+    cmds:
+      - task: observability:install-foundryctl
+
+  install:signoz:
+    desc: Instala ou verifica SigNoz self-hosted via Foundry/foundryctl.
+    cmds:
+      - task: observability:install-signoz
+
+  install:postgres-collector:
+    desc: Instala ou verifica o collector PostgreSQL para envio de métricas ao SigNoz.
+    cmds:
+      - task: observability:install-postgres-collector
 
   status:
     desc: Exibe status remoto resumido de Docker, firewall e Coolify.

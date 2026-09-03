@@ -1,0 +1,28 @@
+version: '3'
+
+tasks:
+  install-foundryctl:
+    desc: Instala ou verifica Foundry/foundryctl na VPS.
+    cmds:
+      - ./scripts/remote.sh foundryctl
+
+  install-signoz:
+    desc: Instala ou verifica SigNoz self-hosted via Foundry/foundryctl.
+    cmds:
+      - task: install-foundryctl
+      - ./scripts/remote.sh signoz
+
+  install-postgres-collector:
+    desc: Instala ou verifica o collector PostgreSQL que envia métricas ao SigNoz.
+    cmds:
+      - ./scripts/remote.sh postgres-collector
+
+  firewall:
+    desc: Configura UFW para portas públicas do SigNoz quando habilitado.
+    cmds:
+      - ./scripts/remote.sh signoz-firewall
+
+  status:
+    desc: Verifica Foundry/foundryctl, SigNoz e collector PostgreSQL.
+    cmds:
+      - ./scripts/remote.sh observability-status

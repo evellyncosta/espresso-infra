@@ -2,30 +2,43 @@
 
 Provisionamento da infraestrutura do projeto Espresso usando Taskfile, Docker e Coolify.
 
-Atualmente a infraestrutura roda em uma VPS Contabo. Este repositório prepara essa VPS para executar a aplicação Espresso e seus serviços de apoio, mas não cria, destrói, redimensiona nem gerencia o ciclo de vida da máquina no provedor. A VPS deve existir antes da execução das tasks, com acesso SSH funcional a partir da máquina do operador.
+Atualmente a infraestrutura roda em uma VPS Contabo já existente. Este repositório prepara essa VPS para executar a aplicação Espresso API e seus serviços de apoio, mas não cria, destrói, redimensiona nem gerencia o ciclo de vida da máquina no provedor. A VPS deve existir antes da execução das tasks, com acesso SSH funcional a partir da máquina do operador.
 
 ## Proposta do projeto
 
-A proposta do Espresso Infra é provisionar a infraestrutura necessária para rodar o projeto Espresso em uma VPS já configurada, usando Taskfile como interface operacional e Coolify como plataforma de deploy e runtime de containers.
+O Espresso Infra entrega uma interface operacional via Taskfile para preparar o servidor remoto por SSH, validar o sistema operacional, configurar dependências básicas, proteger o acesso inicial com UFW, instalar Docker e instalar ou preservar o Coolify.
 
-O projeto entrega uma interface única via Taskfile para preparar o servidor remoto por SSH, validar o sistema operacional, configurar dependências básicas, proteger o acesso inicial com UFW, instalar Docker e instalar ou preservar o Coolify. A partir do Coolify, a infraestrutura de runtime passa a incluir a aplicação Spring do Espresso, PostgreSQL e Redis/Valkey em containers gerenciados.
+A partir do Coolify, a infraestrutura de runtime passa a incluir a Espresso API, uma API de pedidos em Kotlin/Spring, PostgreSQL e Redis/Valkey em containers gerenciados. Observabilidade com SigNoz é provisionada em um fluxo separado e opt-in, usando Foundry/foundryctl fora do ciclo de vida do Coolify.
 
-O foco é reduzir a complexidade operacional da hospedagem sem introduzir outro sistema de provisionamento. Por isso, este repositório não chama APIs da Contabo, não usa Pulumi, Terraform, OpenTofu, Ansible, Chef ou Puppet, e não tenta gerenciar recursos externos à VPS.
+O foco é reduzir a complexidade operacional da hospedagem sem introduzir outro sistema de provisionamento. Este repositório não chama APIs da Contabo, não usa Pulumi, Terraform, OpenTofu, Ansible, Chef ou Puppet, e não tenta gerenciar recursos externos à VPS.
+
+## Espresso como lab
+
+O Espresso é um lab de infraestrutura, observabilidade e performance. A aplicação usada no ambiente é a Espresso API, uma API de pedidos escrita em Kotlin/Spring e mantida em um repositório separado: `https://github.com/evellyncosta/espresso-api`.
+
+O ambiente do lab contém:
+
+- uma API Kotlin/Spring para o domínio de pedidos;
+- PostgreSQL como banco relacional da aplicação;
+- Redis/Valkey como cache ou serviço de apoio;
+- Coolify para deploy e lifecycle dos containers;
+- SigNoz para receber e visualizar métricas, traces e logs;
+- k6 como ferramenta esperada para gerar carga e coletar insights de performance.
+
+O objetivo é executar a aplicação em uma infraestrutura pequena e controlada, gerar carga com k6 e observar o comportamento do sistema por meio de métricas e sinais de runtime. Este repositório prepara a infraestrutura necessária para esses experimentos; os scripts de teste, cenários k6 e instrumentação da aplicação pertencem ao escopo da aplicação ou de mudanças específicas do lab.
 
 ## Infraestrutura provisionada
 
-O fluxo `task setup` provisiona ou verifica:
+O fluxo base `task setup` provisiona ou verifica:
 
 - sistema operacional suportado para o runtime;
 - pacotes básicos necessários para operação;
-- firewall UFW com as portas necessárias para SSH, HTTP, HTTPS e Coolify;
+- firewall UFW com portas necessárias para SSH, HTTP, HTTPS e Coolify;
 - Docker Engine e Docker Compose plugin;
 - Coolify self-hosted;
-- base para containers da aplicação Spring, PostgreSQL e Redis/Valkey gerenciados pelo Coolify.
+- base para containers da API Kotlin/Spring, PostgreSQL e Redis/Valkey gerenciados pelo Coolify.
 
-## Documentação de arquitetura
-
-A arquitetura do projeto está documentada separadamente em [architecture.md](architecture.md).
+O fluxo opt-in `task setup:observability` provisiona Foundry/foundryctl e SigNoz self-hosted. O collector PostgreSQL para métricas do banco da aplicação é instalado por uma task dedicada.
 
 ## Pré-requisitos
 
@@ -39,7 +52,7 @@ A arquitetura do projeto está documentada separadamente em [architecture.md](ar
 
 Evite instalar o Task via snap se ele falhar com `need to run as root or suid`. Nesse caso, instale o binário oficial do Task ou use outro método recomendado pela documentação.
 
-## Configuração local
+## Configuração rápida
 
 Crie o arquivo local de ambiente:
 
@@ -55,42 +68,24 @@ SERVER_USER=<USUARIO_SSH>
 SSH_KEY_PATH=<CAMINHO_DA_CHAVE_PRIVADA>
 ```
 
-Variáveis disponíveis:
-
-| Variável | Obrigatória | Padrão | Descrição |
-| --- | --- | --- | --- |
-| `SERVER_HOST` | sim | vazio | IP ou hostname da VPS. |
-| `SERVER_USER` | sim | vazio | Usuário usado na conexão SSH. |
-| `SSH_KEY_PATH` | sim | vazio | Caminho local da chave SSH privada. |
-| `SSH_PORT` | não | `22` | Porta SSH da VPS. |
-| `BOOTSTRAP_TIMEZONE` | não | `America/Sao_Paulo` | Timezone aplicado no servidor quando informado. |
-| `ENABLE_UFW` | não | `true` | Habilita configuração de firewall com UFW. |
-| `COOLIFY_INSTALL_URL` | não | URL oficial do Coolify | Instalador self-hosted do Coolify. |
-| `COOLIFY_EXPECTED_DIR` | não | `/data/coolify/source` | Diretório esperado da instalação do Coolify. |
-
-O arquivo `.env` é ignorado pelo Git. Não adicione chaves, senhas, tokens ou credenciais reais ao repositório.
-
-## Provisionamento
-
-Execute o fluxo completo:
+Execute o provisionamento base:
 
 ```bash
 task setup
 ```
 
-O `setup` executa, em ordem:
+Execute observabilidade somente quando a VPS tiver capacidade e exposição de portas desejadas:
 
-1. validação local e conectividade SSH;
-2. preparação do sistema operacional;
-3. instalação/verificação do Docker;
-4. configuração básica de firewall;
-5. instalação/verificação do Coolify.
+```bash
+task setup:observability
+task install:postgres-collector
+```
 
-As tasks foram desenhadas para serem idempotentes. Reexecutar `task setup` deve preservar Docker, Coolify, firewall e dados persistentes existentes.
+Consulte a operação detalhada, variáveis e portas em [docs/operations.md](docs/operations.md).
 
-## Acesso ao Coolify e à VPS
+## Acessos principais
 
-Após a instalação, o acesso inicial ao painel do Coolify fica disponível na porta `8000`:
+Após a instalação, o acesso inicial ao painel do Coolify fica disponível em:
 
 ```text
 http://<SERVER_HOST>:8000
@@ -98,96 +93,30 @@ http://<SERVER_HOST>:8000
 
 Depois de configurar domínio e HTTPS pelo proxy do Coolify, o acesso normal deve passar pelas portas `80` e `443`.
 
-Para acessar a CLI da VPS:
+Quando SigNoz for provisionado, a UI fica disponível por padrão em:
 
-```bash
-ssh <SERVER_USER>@<SERVER_HOST>
+```text
+http://<SERVER_HOST>:8081
 ```
 
-Comandos úteis dentro da VPS:
+## Documentação detalhada
 
-```bash
-sudo docker ps
-cd /data/coolify/source
-sudo docker exec -it coolify bash
-```
+- [Arquitetura](docs/architecture.md): visão geral dos componentes, fluxos e limites arquiteturais.
+- [Aplicação Espresso API](docs/application.md): relação com o repositório externo da aplicação e suas dependências de runtime.
+- [Coolify](docs/coolify.md): acesso, responsabilidades, portas diretas e serviços gerenciados.
+- [SigNoz](docs/signoz.md): Foundry/foundryctl, instalação opt-in, portas, OTLP, firewall e limites.
+- [Collector PostgreSQL](docs/postgres-collector.md): fluxo PostgreSQL -> collector -> SigNoz, credencial privada e validação.
+- [Operação](docs/operations.md): tasks, variáveis, portas, persistência, escopo e referências.
 
-O terminal web do Coolify é acessado pela interface do painel. Quando o painel é acessado diretamente por IP, ele depende da porta `6002/tcp`.
+## Responsabilidades
 
-## Tasks disponíveis
-
-Liste as tasks públicas:
-
-```bash
-task --list
-```
-
-Principais comandos:
-
-```bash
-task preflight
-task ssh:test
-task system
-task security
-task install:docker
-task install:coolify
-task status
-task setup
-```
-
-## Portas
-
-A task de segurança usa UFW e libera explicitamente:
-
-| Porta | Uso |
+| Área | Responsabilidade |
 | --- | --- |
-| `22/tcp` ou `SSH_PORT` | SSH usado no provisionamento. |
-| `80/tcp` | HTTP, proxy e emissão/renovação de certificados. |
-| `443/tcp` | HTTPS. |
-| `8000/tcp` | Acesso direto inicial ao dashboard do Coolify. |
-| `6001/tcp` | Atualizações em tempo real do dashboard quando acessado por IP direto. |
-| `6002/tcp` | Terminal web por IP direto. |
-
-Depois que o dashboard estiver configurado por domínio/proxy no Coolify, as portas diretas `8000`, `6001` e `6002` podem ser restringidas ou fechadas conforme a política operacional do ambiente.
-
-## Persistência
-
-Este repositório não cria volume externo na Contabo. Dados persistentes devem usar o filesystem da própria VPS por meio de:
-
-- Docker volumes gerenciados pelo Docker/Coolify;
-- bind mounts explícitos no filesystem da VPS quando necessário.
-
-PostgreSQL, Redis/Valkey e dados da aplicação não devem depender apenas da camada gravável efêmera dos containers. Backup e migração automática de dados de produção estão fora do escopo desta etapa.
-
-## Responsabilidades do Coolify
-
-Após o provisionamento, o Coolify é responsável por:
-
-- integração com o repositório da aplicação;
-- build e deploy;
-- restart e lifecycle dos containers;
-- variáveis de ambiente da aplicação;
-- domínio, HTTP/HTTPS e certificados;
-- container da aplicação Spring Espresso;
-- PostgreSQL e Redis/Valkey quando esses serviços forem executados pelo Coolify;
-- volumes persistentes dos serviços gerenciados.
-
-O Taskfile não deve duplicar essas responsabilidades.
-
-## Dependências AWS
-
-O caminho operacional anterior em Pulumi/AWS foi removido deste repositório porque era exclusivo da hospedagem antiga. A classificação feita para esta migração foi:
-
-| Item anterior | Classificação |
-| --- | --- |
-| Pulumi project e dependências Python | Runtime AWS antigo. |
-| VPC, subnets, route tables e VPC endpoints | Rede AWS antiga. |
-| Security groups e Client VPN | Acesso privado AWS antigo. |
-| RDS PostgreSQL e Secrets Manager associado | Banco gerenciado AWS antigo, substituído por serviço gerenciado via Coolify quando aplicável. |
-| ElastiCache/Valkey | Cache gerenciado AWS antigo, substituído por serviço gerenciado via Coolify quando aplicável. |
-| ECR, ECS Express Mode, IAM task roles e CloudWatch logs | Runtime de aplicação AWS antigo. |
-
-Integrações AWS funcionais da aplicação, como S3, não devem ser removidas automaticamente neste repositório caso ainda sejam usadas pela aplicação. Elas devem ser configuradas como dependências da aplicação no Coolify.
+| VPS Contabo | Existir previamente e aceitar acesso SSH administrativo. |
+| Espresso Infra | Preparar sistema, firewall, Docker, Coolify, SigNoz opt-in e integrações operacionais documentadas. |
+| Coolify | Gerenciar deploy, variáveis, domínio, certificados, API Kotlin/Spring, PostgreSQL e Redis/Valkey. |
+| SigNoz | Receber telemetria e disponibilizar observabilidade self-hosted quando instalado. |
+| Espresso API | Implementar a API de pedidos em Kotlin/Spring e configurar suas dependências funcionais, telemetria e cenários de carga quando aplicável. |
 
 ## Fora de escopo
 
@@ -196,12 +125,10 @@ Integrações AWS funcionais da aplicação, como S3, não devem ser removidas a
 - Provisionar volumes externos da Contabo.
 - Migrar dados de produção automaticamente.
 - Configurar CI/CD completo.
-- Implementar observabilidade, OpenTelemetry ou SigNoz.
+- Instrumentar a aplicação Kotlin/Spring com OpenTelemetry.
+- Criar cenários de teste de carga com k6.
+- Configurar dashboards, alertas, retenção ou API keys do SigNoz.
+- Coletar query samples, top queries ou planos de query do PostgreSQL.
+- Habilitar SigNoz MCP.
 - Migrar logs históricos do CloudWatch.
 - Implementar backup completo da infraestrutura.
-
-## Referências
-
-- Coolify self-hosted installation: https://coolify.io/docs/get-started/installation
-- Coolify firewall: https://next.coolify.io/docs/core/infrastructure/servers/firewall
-- Taskfile: https://taskfile.dev/
