@@ -43,12 +43,14 @@ Após a instalação, o acesso inicial ao painel do Coolify fica disponível na 
 http://<SERVER_HOST>:8000
 ```
 
-Depois de configurar domínio e HTTPS pelo proxy do Coolify, o acesso normal deve passar pelas portas `80` e `443`.
+Esse acesso direto pode ser necessário temporariamente durante a configuração da VPN. Após validar o WireGuard, o painel e as portas administrativas do Coolify devem ser acessados somente pela VPN; consulte [Coolify acessível somente via VPN](coolify-vpn-access.md) e a [ADR 002](adrs/002-coolify-access-via-vpn.md).
+
+Depois de configurar domínio e HTTPS pelo proxy do Coolify, as aplicações continuam acessíveis publicamente pelas portas `80` e `443`.
 
 Para acessar a CLI da VPS:
 
 ```bash
-ssh <SERVER_USER>@<SERVER_HOST>
+ssh <SERVER_USER>@<IP_WIREGUARD_DA_VPS>
 ```
 
 Comandos úteis dentro da VPS:
@@ -65,11 +67,11 @@ O terminal web do Coolify é acessado pela interface do painel. Quando o painel 
 
 | Porta | Uso |
 | --- | --- |
-| `8000/tcp` | Acesso direto inicial ao dashboard do Coolify. |
-| `6001/tcp` | Atualizações em tempo real do dashboard quando acessado por IP direto. |
-| `6002/tcp` | Terminal web por IP direto. |
+| `8000/tcp` | Acesso direto ao dashboard do Coolify pela VPN. |
+| `6001/tcp` | Atualizações em tempo real do dashboard acessado pela VPN. |
+| `6002/tcp` | Terminal web do Coolify acessado pela VPN. |
 
-Depois que o dashboard estiver configurado por domínio/proxy no Coolify, as portas diretas `8000`, `6001` e `6002` podem ser restringidas ou fechadas conforme a política operacional do ambiente.
+As portas diretas `8000`, `6001` e `6002`, assim como SSH em `22/tcp`, não devem ser públicas no ambiente configurado. Elas devem ser permitidas apenas para a sub-rede WireGuard conforme o [manual de acesso por VPN](coolify-vpn-access.md).
 
 ## Relação com SigNoz
 

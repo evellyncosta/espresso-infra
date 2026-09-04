@@ -25,3 +25,4 @@ Voltar para o [README](../../README.md).
 | ADR | Status | Decisão |
 | --- | --- | --- |
 | [001](001-private-network-contabo.md) | Aceito | Usar a Private Network da Contabo para comunicação interna futura. |
+| [002](002-coolify-access-via-vpn.md) | Aceito | Restringir o acesso administrativo ao Coolify e SSH à VPN WireGuard. |
