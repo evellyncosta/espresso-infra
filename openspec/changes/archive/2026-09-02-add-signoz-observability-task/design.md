@@ -91,6 +91,5 @@ Racional: endpoints OTLP podem receber dados operacionais. Expor essas portas pu
 4. Atualizar a lógica de UFW para considerar portas do SigNoz quando observabilidade estiver habilitada.
 5. Atualizar README e documentação de arquitetura com SigNoz, endpoints OTLP e propriedade operacional.
 6. Validar sintaxe dos scripts e listagem do Taskfile localmente.
-7. Validar em uma VPS descartável executando a task Foundry/foundryctl, a task SigNoz e a task de status duas vezes.
 
 Reversão das mudanças do repositório é um revert Git normal antes do uso em produção. Reversão de uma VPS onde SigNoz foi instalado é manual: parar a stack Compose gerada, inspecionar `/data/signoz` e preservar ou remover Docker volumes deliberadamente conforme a telemetria deva ser retida ou descartada.

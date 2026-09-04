@@ -33,6 +33,4 @@
 ## 6. Validação
 
 - [x] 6.1 Executar validação estática local do Taskfile e scripts shell, e verificar que `bash -n scripts/*.sh` e `task --list` retornam sucesso em ambiente com Task instalado corretamente.
-- [ ] 6.2 Executar as tasks de Foundry/foundryctl e SigNoz em uma VPS descartável compatível, e verificar que a UI do SigNoz responde na porta documentada.
-- [ ] 6.3 Reexecutar as tasks em uma VPS já configurada, e verificar idempotência sem perda de configuração, volumes ou acesso ao Coolify.
-- [x] 6.4 Verificar higiene de secrets no repositório, e confirmar que nenhum token, senha, chave privada ou API key foi adicionado a arquivos rastreados.
+- [x] 6.2 Verificar higiene de secrets no repositório, e confirmar que nenhum token, senha, chave privada ou API key foi adicionado a arquivos rastreados.

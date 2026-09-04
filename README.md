@@ -107,6 +107,7 @@ http://<SERVER_HOST>:8081
 - [SigNoz](docs/signoz.md): Foundry/foundryctl, instalação opt-in, portas, OTLP, firewall e limites.
 - [Collector PostgreSQL](docs/postgres-collector.md): fluxo PostgreSQL -> collector -> SigNoz, credencial privada e validação.
 - [Operação](docs/operations.md): tasks, variáveis, portas, persistência, escopo e referências.
+- [Decisões arquiteturais (ADRs)](docs/adrs/README.md): decisões duradouras e seus contextos.
 
 ## Responsabilidades
 
