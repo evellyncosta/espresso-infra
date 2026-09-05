@@ -1,10 +1,4 @@
-# infra-documentation Specification
-
-## Purpose
-
-Define a documentação do Espresso Infra para a operação da VPS, Docker e Coolify, mantendo referências claras para componentes mantidos em repositórios externos.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: README como entrada geral
 O sistema SHALL manter o `README.md` como ponto de entrada geral da documentacao do Espresso Infra, priorizando visao do projeto, quickstart e links para documentos detalhados.
@@ -32,16 +26,9 @@ O sistema SHALL organizar os detalhes de infraestrutura que possui em arquivos M
 - **WHEN** um operador procura instrucoes de SigNoz ou collector PostgreSQL
 - **THEN** a documentacao do infra referencia o repositorio externo de observabilidade em vez de manter instrucoes locais
 
-### Requirement: Referência à observabilidade externa
-O sistema SHALL referenciar `https://github.com/evellyncosta/espresso-observability` para SigNoz, collector PostgreSQL e o lifecycle de observabilidade.
+## REMOVED Requirements
 
-#### Scenario: Operador procura observabilidade
-- **WHEN** um operador consulta a documentação do infra
-- **THEN** encontra o repositório externo de observabilidade em vez de instruções locais de instalação, status ou destruição
+### Requirement: Documentacao dedicada de SigNoz
+**Reason**: SigNoz e o collector PostgreSQL passam a ser operados e documentados no repositório externo de observabilidade.
 
-### Requirement: Documentação da aplicação externa
-O sistema SHALL referenciar `https://github.com/evellyncosta/espresso-api` para o código e configuração funcional da aplicação.
-
-#### Scenario: Operador procura o código da aplicação
-- **WHEN** um operador consulta a documentação da aplicação
-- **THEN** encontra a referência ao repositório externo da Espresso API e a fronteira com Coolify e infra
+**Migration**: Consultar `https://github.com/evellyncosta/espresso-observability` para instalação, operação, status, destruição e documentação de observabilidade.
